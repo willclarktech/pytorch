@@ -52,8 +52,8 @@ class FakeQuantize(Module):
         self.activation_post_process = observer(**observer_kwargs)
         assert torch.iinfo(self.activation_post_process.dtype).min <= quant_min, 'quant_min out of bound'
         assert quant_max <= torch.iinfo(self.activation_post_process.dtype).max, 'quant_max out of bound'
-        self.scale = torch.tensor([1.0])
-        self.zero_point = torch.tensor([0])
+        self.register_buffer('scale', torch.tensor([1.0]))
+        self.register_buffer('zero_point', torch.tensor([0]))
         self.dtype = self.activation_post_process.dtype
         self.qscheme = self.activation_post_process.qscheme
         self.ch_axis = self.activation_post_process.ch_axis if hasattr(self.activation_post_process, 'ch_axis') else None
@@ -111,7 +111,8 @@ class FakeQuantize(Module):
         for name in local_state:
             key = prefix + name
             if key in state_dict:
-                setattr(self, name, state_dict.pop(key))
+                val = state_dict[key]
+                setattr(self, name, val)
             elif strict:
                 missing_keys.append(key)
         super(FakeQuantize, self)._load_from_state_dict(state_dict, prefix, local_metadata, strict,
